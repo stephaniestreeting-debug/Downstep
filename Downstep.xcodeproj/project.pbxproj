@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		D712D012305C6B77002EB392 /* AuraSound.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AuraSound.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D712D012305C6B77002EB392 /* Downstep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Downstep.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D712D014305C6B77002EB392 /* AuraSound */ = {
+		D712D014305C6B77002EB392 /* Downstep */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AuraSound;
+			path = Downstep;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -30,7 +30,7 @@
 		D712D009305C6B77002EB392 = {
 			isa = PBXGroup;
 			children = (
-				D712D014305C6B77002EB392 /* AuraSound */,
+				D712D014305C6B77002EB392 /* Downstep */,
 				D712D013305C6B77002EB392 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -38,7 +38,7 @@
 		D712D013305C6B77002EB392 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D712D012305C6B77002EB392 /* AuraSound.app */,
+				D712D012305C6B77002EB392 /* Downstep.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -46,9 +46,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D712D011305C6B77002EB392 /* AuraSound */ = {
+		D712D011305C6B77002EB392 /* Downstep */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D712D01D305C6B78002EB392 /* Build configuration list for PBXNativeTarget "AuraSound" */;
+			buildConfigurationList = D712D01D305C6B78002EB392 /* Build configuration list for PBXNativeTarget "Downstep" */;
 			buildPhases = (
 				D712D00E305C6B77002EB392 /* Sources */,
 				D712D00F305C6B77002EB392 /* Frameworks */,
@@ -57,11 +57,11 @@
 			buildRules = (
 			);
 			fileSystemSynchronizedGroups = (
-				D712D014305C6B77002EB392 /* AuraSound */,
+				D712D014305C6B77002EB392 /* Downstep */,
 			);
-			name = AuraSound;
-			productName = AuraSound;
-			productReference = D712D012305C6B77002EB392 /* AuraSound.app */;
+			name = Downstep;
+			productName = Downstep;
+			productReference = D712D012305C6B77002EB392 /* Downstep.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -79,7 +79,7 @@
 					};
 				};
 			};
-			buildConfigurationList = D712D00D305C6B77002EB392 /* Build configuration list for PBXProject "AuraSound" */;
+			buildConfigurationList = D712D00D305C6B77002EB392 /* Build configuration list for PBXProject "Downstep" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -93,7 +93,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D712D011305C6B77002EB392 /* AuraSound */,
+				D712D011305C6B77002EB392 /* Downstep */,
 			);
 		};
 /* End PBXProject section */
@@ -115,7 +115,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		D712D01B305C6B78002EB392 /* Debug configuration for PBXProject "AuraSound" */ = {
+		D712D01B305C6B78002EB392 /* Debug configuration for PBXProject "Downstep" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -178,7 +178,7 @@
 			};
 			name = Debug;
 		};
-		D712D01C305C6B78002EB392 /* Release configuration for PBXProject "AuraSound" */ = {
+		D712D01C305C6B78002EB392 /* Release configuration for PBXProject "Downstep" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -234,7 +234,7 @@
 			};
 			name = Release;
 		};
-		D712D01E305C6B78002EB392 /* Debug configuration for PBXNativeTarget "AuraSound" */ = {
+		D712D01E305C6B78002EB392 /* Debug configuration for PBXNativeTarget "Downstep" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -243,9 +243,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your breathing shapes the sound as you go. Nothing is recorded or saved — it's just an amplitude reading, processed on your device only.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -253,7 +254,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aurasound.AuraSound;
+				PRODUCT_BUNDLE_IDENTIFIER = com.downstep.Downstep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -265,7 +266,7 @@
 			};
 			name = Debug;
 		};
-		D712D01F305C6B78002EB392 /* Release configuration for PBXNativeTarget "AuraSound" */ = {
+		D712D01F305C6B78002EB392 /* Release configuration for PBXNativeTarget "Downstep" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -274,9 +275,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your breathing shapes the sound as you go. Nothing is recorded or saved — it's just an amplitude reading, processed on your device only.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -284,7 +286,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aurasound.AuraSound;
+				PRODUCT_BUNDLE_IDENTIFIER = com.downstep.Downstep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -299,19 +301,19 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D712D00D305C6B77002EB392 /* Build configuration list for PBXProject "AuraSound" */ = {
+		D712D00D305C6B77002EB392 /* Build configuration list for PBXProject "Downstep" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D712D01B305C6B78002EB392 /* Debug configuration for PBXProject "AuraSound" */,
-				D712D01C305C6B78002EB392 /* Release configuration for PBXProject "AuraSound" */,
+				D712D01B305C6B78002EB392 /* Debug configuration for PBXProject "Downstep" */,
+				D712D01C305C6B78002EB392 /* Release configuration for PBXProject "Downstep" */,
 			);
 			defaultConfigurationName = Release;
 		};
-		D712D01D305C6B78002EB392 /* Build configuration list for PBXNativeTarget "AuraSound" */ = {
+		D712D01D305C6B78002EB392 /* Build configuration list for PBXNativeTarget "Downstep" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D712D01E305C6B78002EB392 /* Debug configuration for PBXNativeTarget "AuraSound" */,
-				D712D01F305C6B78002EB392 /* Release configuration for PBXNativeTarget "AuraSound" */,
+				D712D01E305C6B78002EB392 /* Debug configuration for PBXNativeTarget "Downstep" */,
+				D712D01F305C6B78002EB392 /* Release configuration for PBXNativeTarget "Downstep" */,
 			);
 			defaultConfigurationName = Release;
 		};
