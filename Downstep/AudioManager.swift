@@ -2,15 +2,18 @@
 //  AudioManager.swift
 //  Downstep
 //
-//  Real-time generative audio engine. Instead of looping pre-baked audio files,
-//  every sound is synthesized live from filtered noise shaped into four distinct
-//  nature textures — rain, wind, ocean and birds — so nothing is a fixed loop and
-//  there's no synth tone/hum competing with them.
+//  Audio engine for the app's atmospheres. Birds and Lofi are synthesized live
+//  (filtered noise / oscillators, so nothing is a fixed loop); Rain is a real
+//  recording played back on loop — Wind and Ocean were tried as generated
+//  textures and as recordings, and dropped either way (see Sounds-Attribution.md).
 //
 
 import AVFoundation
 import Combine
 import UIKit
+import os
+
+private let audioLog = Logger(subsystem: "com.downstep.Downstep", category: "atmosphere")
 
 /// State machine for "Follow My Breath" mode, where the session's tempo is driven
 /// by the listener's actual breathing (detected from the mic) instead of a fixed pace.
@@ -51,6 +54,7 @@ final class AudioManager: ObservableObject {
         didSet {
             updateParams { $0.atmosphere = atmosphereStyle }
             UserDefaults.standard.set(atmosphereStyle.rawValue, forKey: PreferenceKeys.atmosphere)
+            if isPlaying { playRealAtmosphere(atmosphereStyle) }
         }
     }
     /// The visual/mood backdrop, chosen upfront and remembered — sets the mood
@@ -135,9 +139,11 @@ final class AudioManager: ObservableObject {
     /// True once guidance has kicked in this streak — lets the "back to calm" message
     /// only appear as a genuine return from an elevated pace, not on every reading.
     private var wasGuiding = false
-    /// Distinct from the drag track's phase-transition tap — a firmer, rarer pulse
-    /// so each literal "downstep" in the guidance curve is felt, not just seen.
-    private let stepHaptic = UIImpactFeedbackGenerator(style: .rigid)
+    /// Distinct from the drag track's phase-transition tap (`.soft`) by being
+    /// stronger, not sharper — `.heavy` is still a deep, dull impact, never the
+    /// crisp/high-feeling end of the style range — so each literal "downstep"
+    /// in the guidance curve is felt, not just seen.
+    private let stepHaptic = UIImpactFeedbackGenerator(style: .heavy)
     /// When the current guidance episode started — the clock for `timeToCalmSeconds`.
     private var guidanceStartedAt: Date?
     private static let bestTimeToCalmKey = "downstep.bestTimeToCalmSeconds"
@@ -169,6 +175,15 @@ final class AudioManager: ObservableObject {
     private let reverb = AVAudioUnitReverb()
     private var sourceNode: AVAudioSourceNode!
     private let sampleRate: Double = 44_100
+
+    // Rain is a real recording (Pixabay Content License, see
+    // Sounds-Attribution.md) rather than generated noise — repeated attempts to
+    // shape procedural noise into convincing rain kept reading as waves, clicks,
+    // or flat white noise. Wind and ocean were tried the same way and dropped
+    // (harsh/gusty, and shore-lapping read as anxiety-inducing rather than
+    // calming). Birds and lofi stay fully generated, below.
+    private let rainPlayer = AVAudioPlayerNode()
+    private var rainBuffer: AVAudioPCMBuffer?
     private var timer: Timer?
 
     private let paramLock = NSLock()
@@ -187,18 +202,10 @@ final class AudioManager: ObservableObject {
     // Render-thread-only state (never touched off the audio thread).
     private var breathPhase: Double = 0
     private var lfoPhase: Double = 0
-    private var gustPhase: Double = 0
-    private var waveLfoPhase: Double = 0
     private var noiseFilterState: Double = 0
     private var noiseLowState: Double = 0
     private var pinkState = [Double](repeating: 0, count: 7)
     private var fadeGain: Double = 0
-
-    // Rain droplet scheduler.
-    private var rainDropSamplesRemaining = 0
-    private var rainDropTotalSamples = 0
-    private var samplesUntilNextDrop = 0
-    private var dropFilterState: Double = 0
 
     // Bird chirp scheduler/oscillator.
     private var chirpSamplesRemaining = 0
@@ -207,6 +214,37 @@ final class AudioManager: ObservableObject {
     private var chirpFrequencyStart: Double = 3000
     private var chirpFrequencySweep: Double = 800
     private var samplesUntilNextChirp = 0
+
+    // Lofi: a generated (not sampled) chord loop, entirely built from sine
+    // oscillators — four mellow, jazz-adjacent chords, each held long enough
+    // to feel unhurried. Frequencies are equal-temperament, kept in a warm
+    // low-mid register so the loop sits under the breathing rather than
+    // demanding attention.
+    private static let lofiChords: [[Double]] = [
+        [174.61, 220.00, 261.63, 329.63], // Fmaj7
+        [130.81, 164.81, 196.00, 246.94], // Cmaj7
+        [110.00, 130.81, 164.81, 196.00], // Am7
+        [98.00, 123.47, 146.83, 185.00],  // Gmaj7
+    ]
+    private var lofiChordIndex = 0
+    private var lofiChordElapsedSamples = 0
+    private let lofiChordDurationSamples = Int(6.0 * 44_100)
+    private var lofiVoicePhases = [Double](repeating: 0, count: 4)
+    private var lofiVibratoPhase: Double = 0
+    private var lofiFilterState: Double = 0
+    // Vinyl crackle — short, quiet noise ticks, denser and far quieter than
+    // rain's droplets so it reads as texture, not weather.
+    private var lofiCrackleSamplesRemaining = 0
+    private var lofiCrackleTotalSamples = 0
+    private var samplesUntilNextCrackle = 0
+    private var lofiCrackleFilterState: Double = 0
+    // A soft, steady sub pulse (72bpm) — low enough to feel more than hear,
+    // the one deliberately rhythmic element, kept minimal on purpose.
+    private var lofiPulseSamplesRemaining = 0
+    private let lofiPulseTotalSamples = Int(0.18 * 44_100)
+    private var samplesUntilNextPulse = 0
+    private let lofiPulseIntervalSamples = Int(60.0 / 72.0 * 44_100)
+    private var lofiPulsePhase: Double = 0
 
     init() {
         configureAudioSession()
@@ -237,7 +275,58 @@ final class AudioManager: ObservableObject {
         engine.connect(reverb, to: engine.mainMixerNode, format: format)
         engine.mainMixerNode.outputVolume = 1.0
 
+        engine.attach(rainPlayer)
+        engine.connect(rainPlayer, to: engine.mainMixerNode, format: nil)
+        rainBuffer = Self.loadBuffer(named: "rain", extension: "m4a")
+
         try? engine.start()
+    }
+
+    /// Loads a bundled recording into memory once, up front, so switching
+    /// atmospheres is instant with no decode hitch.
+    private static func loadBuffer(named name: String, extension ext: String) -> AVAudioPCMBuffer? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
+            audioLog.error("\(name).\(ext) not found in bundle")
+            return nil
+        }
+        guard let file = try? AVAudioFile(forReading: url) else {
+            audioLog.error("\(name).\(ext) found but AVAudioFile could not open it")
+            return nil
+        }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) else {
+            audioLog.error("\(name).\(ext) could not allocate a buffer (format: \(file.processingFormat))")
+            return nil
+        }
+        do {
+            try file.read(into: buffer)
+        } catch {
+            audioLog.error("\(name).\(ext) failed to read into buffer: \(error.localizedDescription)")
+            return nil
+        }
+        return buffer
+    }
+
+    /// Starts (or restarts) looping playback of the real rain recording, or
+    /// stops it if a different atmosphere is selected. Always stops and freshly
+    /// reschedules rather than checking `isPlaying` first: switching to mic
+    /// listening stops/restarts the whole `AVAudioEngine` (needed for the
+    /// session/voice-processing reconfiguration in `beginBreathCapture`), which
+    /// silently drops the player's scheduled buffer without resetting
+    /// `isPlaying` — so that flag can't be trusted to mean "actually audible
+    /// right now."
+    private func playRealAtmosphere(_ style: AtmosphereStyle) {
+        rainPlayer.stop()
+        guard style == .rain, let rainBuffer else { return }
+        rainPlayer.scheduleBuffer(rainBuffer, at: nil, options: .loops)
+        rainPlayer.play()
+    }
+
+    /// The real recording plays at a steady volume once on/off — no breath
+    /// swell, since a slow amplitude pulse on real texture is what read as
+    /// "waves" in the first place. Only the generated atmospheres (birds/lofi)
+    /// breathe.
+    private func updateRealAtmosphereVolume() {
+        rainPlayer.volume = (soundEnabled && isPlaying) ? 1.0 : 0.0
     }
 
     // MARK: - Transport
@@ -248,6 +337,8 @@ final class AudioManager: ObservableObject {
         didSet {
             updateParams { $0.fadeTarget = (soundEnabled && isPlaying) ? 1 : 0 }
             UserDefaults.standard.set(soundEnabled, forKey: PreferenceKeys.soundEnabled)
+            if isPlaying { playRealAtmosphere(atmosphereStyle) }
+            updateRealAtmosphereVolume()
         }
     }
 
@@ -310,12 +401,15 @@ final class AudioManager: ObservableObject {
     func resume() {
         isPlaying = true
         updateParams { $0.fadeTarget = soundEnabled ? 1 : 0 }
+        if soundEnabled { playRealAtmosphere(atmosphereStyle) }
+        updateRealAtmosphereVolume()
         startTimer()
     }
 
     func pause() {
         isPlaying = false
         updateParams { $0.fadeTarget = 0 }
+        updateRealAtmosphereVolume()
         timer?.invalidate()
     }
 
@@ -327,6 +421,7 @@ final class AudioManager: ObservableObject {
 
     func stop() {
         pause()
+        rainPlayer.stop()
         setFollowingBreath(false)
         currentSession = nil
         elapsed = 0
@@ -415,6 +510,17 @@ final class AudioManager: ObservableObject {
             return
         }
 
+        // Without this, the mic picks up the app's own speaker output (the
+        // atmosphere track) whenever there's no headphones, and real recordings
+        // with sharp transients (rain drops, gusts) get misread as fast breathing
+        // — echo cancellation uses the engine's own output as a reference signal
+        // to cancel exactly that.
+        do {
+            try engine.inputNode.setVoiceProcessingEnabled(true)
+        } catch {
+            audioLog.error("setVoiceProcessingEnabled(true) failed: \(error.localizedDescription)")
+        }
+
         breathFollowState = .calibrating
         calibrationSamples = 0
         calibrationStartDate = Date()
@@ -454,6 +560,10 @@ final class AudioManager: ObservableObject {
 
         do {
             try engine.start()
+            // The engine stop/start above (needed for the session/voice-processing
+            // reconfiguration) silently drops any already-playing real atmosphere —
+            // re-schedule it now that the engine is back up.
+            if soundEnabled { playRealAtmosphere(atmosphereStyle) }
         } catch {
             isFollowingBreath = false
             breathFollowState = .idle
@@ -464,6 +574,7 @@ final class AudioManager: ObservableObject {
     private func stopBreathListening() {
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
+        try? engine.inputNode.setVoiceProcessingEnabled(false)
         breathFollowState = .idle
         revertToSessionBreathDefaults()
 
@@ -546,7 +657,18 @@ final class AudioManager: ObservableObject {
             envelopeRangeMin += (ac - envelopeRangeMin) * 0.000003
         }
         let range = max(envelopeRangeMax - envelopeRangeMin, 0.0003)
-        let riseThreshold = envelopeRangeMin + range * 0.28
+        // When our own atmosphere sound is playing, the mic can pick up the app's
+        // own speaker output — voice processing/echo cancellation (enabled in
+        // `beginBreathCapture`) is meant to cancel exactly that, but isn't
+        // guaranteed everywhere (the Simulator's mic/speaker path in particular
+        // isn't the tuned acoustic setup real echo cancellation is calibrated
+        // for). Raising the bar for what counts as a genuine peak specifically
+        // while sound is on is a second, independent layer of defense — real
+        // breath still has to clear a materially higher bar than whatever the
+        // room/speaker leakage looks like, without capping the breathing rate
+        // itself (genuine panic breathing can legitimately run this fast).
+        let selfNoiseGuard: Double = soundEnabled ? 0.55 : 0.28
+        let riseThreshold = envelopeRangeMin + range * selfNoiseGuard
         let fallThreshold = envelopeRangeMin + range * 0.12
 
         // Require real observed signal, not just relative range, before trusting a
@@ -675,11 +797,6 @@ final class AudioManager: ObservableObject {
         }
     }
 
-    /// Manual fallback for when the mic can't pick up a clear signal (quiet breathing,
-    /// a noisy room, or a laptop mic farther from your mouth than a phone). Called once
-    /// per completed breath — by a tap, or by a full drag-track cycle — after a couple
-    /// of signals this feeds the exact same pipeline mic detection does, so tracking,
-    /// guidance, and the trend chart all work identically no matter which input it was.
     /// Called only when the listener explicitly taps the "switch to touch"
     /// hint after the mic goes quiet — the fallback is offered, never
     /// silently applied. This is what actually swaps in the drag track.
@@ -687,6 +804,11 @@ final class AudioManager: ObservableObject {
         isManualModeChosen = true
     }
 
+    /// Manual fallback for when the mic can't pick up a clear signal (quiet breathing,
+    /// a noisy room, or a laptop mic farther from your mouth than a phone). Called once
+    /// per completed breath — by a tap, or by a full drag-track cycle — after a couple
+    /// of signals this feeds the exact same pipeline mic detection does, so tracking,
+    /// guidance, and the trend chart all work identically no matter which input it was.
     func registerRhythmSignal() {
         guard isFollowingBreath else { return }
         let now = Date()
@@ -743,30 +865,13 @@ final class AudioManager: ObservableObject {
             let pink = (pinkState[0] + pinkState[1] + pinkState[2] + pinkState[3] + pinkState[4] + pinkState[5] + pinkState[6] + white * 0.5362) * 0.11
             pinkState[6] = white * 0.115926
 
-            // Ocean's wave envelope: a slow, asymmetric swell — a quick-ish rise to the
-            // crest, a longer recede — rather than a plain sine, so it reads as water
-            // washing in and out instead of a wobble.
-            waveLfoPhase += (0.045 + p.movement * 0.035) / sampleRate
-            if waveLfoPhase > 1 { waveLfoPhase -= 1 }
-            let waveRaw = sin(2 * Double.pi * waveLfoPhase)
-            let waveShape = waveRaw >= 0 ? pow(waveRaw, 0.6) : -pow(-waveRaw, 1.6)
-            let waveCrest = max(0, waveShape)
-
             let dt = 1.0 / sampleRate
 
-            // Two noise bands from the same pink-noise source: "air" is the higher,
-            // breathier band (rain hiss / wind whistle / sea foam); "rumble" is a slow,
-            // low undertone (distant thunder-less weight / surf body). Each atmosphere
-            // blends and sweeps these completely differently below.
-            let sweepDepth: Double
-            switch p.atmosphere {
-            case .wind: sweepDepth = 700.0 + p.movement * 1700.0
-            case .ocean: sweepDepth = 150.0 + p.movement * 300.0
-            case .rain: sweepDepth = 40.0 + p.movement * 80.0
-            case .birds: sweepDepth = 60.0 + p.movement * 120.0
-            }
-            let oceanFoamLift = p.atmosphere == .ocean ? waveCrest * 900.0 : 0
-            let airCutoff = max(80.0, 900.0 + p.brightness * 2200.0 + lfo * sweepDepth + oceanFoamLift)
+            // A quiet background noise bed, used only behind birds' chirps below —
+            // rain is a real recording now (its own player node, not this render
+            // callback), and lofi is fully synthesized further down.
+            let sweepDepth = 60.0 + p.movement * 120.0
+            let airCutoff = max(80.0, 900.0 + p.brightness * 2200.0 + lfo * sweepDepth)
             let airAlpha = dt / (1.0 / (2 * Double.pi * airCutoff) + dt)
             noiseFilterState += airAlpha * (pink - noiseFilterState)
 
@@ -774,76 +879,17 @@ final class AudioManager: ObservableObject {
             let rumbleAlpha = dt / (1.0 / (2 * Double.pi * rumbleCutoff) + dt)
             noiseLowState += rumbleAlpha * (pink - noiseLowState)
 
-            var noiseMix = 0.6
-            var airWeight = 1.0
+            var noiseMix = 0.0
+            var airWeight = 0.0
             var rumbleWeight = 0.0
-            var envelopeMultiplier = 1.0
-            switch p.atmosphere {
-            case .rain:
-                // A quieter, thinner hiss bed than before — the earlier level was
-                // loud and low-heavy enough on its own to read as surf/waves. Kept
-                // deliberately restrained so the droplets below (not this bed) are
-                // what identifies the sound as rain.
-                noiseMix = 0.32 + p.texture * 0.22
-                airWeight = 0.8
-                rumbleWeight = 0.03
-            case .wind:
-                // Wide filter sweep (see sweepDepth above) plus body from the rumble
-                // band and a slow gust — a whistling, gusting wind, not a steady wash.
-                noiseMix = 0.6 + p.texture * 0.4
-                airWeight = 0.75
-                rumbleWeight = 0.55
-                gustPhase += (0.03 + p.movement * 0.12) / sampleRate
-                if gustPhase > 1 { gustPhase -= 1 }
-                envelopeMultiplier = 0.75 + 0.25 * sin(2 * Double.pi * gustPhase)
-            case .ocean:
-                // Rumble-heavy body (the water) with the air band brightening right at
-                // the wave's crest (foam), the whole thing swelling with waveShape.
-                noiseMix = 0.6 + p.texture * 0.3
-                airWeight = 0.3 + waveCrest * 0.7
-                rumbleWeight = 0.9
-                envelopeMultiplier = 0.5 + 0.5 * waveShape
-            case .birds:
+            if p.atmosphere == .birds {
                 // A near-silent, still-air bed so the chirps (below) are the feature,
                 // not competing texture.
                 noiseMix = 0.2 + p.texture * 0.15
                 airWeight = 0.45
                 rumbleWeight = 0.02
             }
-            let noiseSignal = (noiseFilterState * airWeight + noiseLowState * rumbleWeight) * envelopeMultiplier
-
-            // Sparse rain droplets: short, band-limited noise bursts at randomized
-            // intervals — the transient detail that makes rain read as rain, not hiss.
-            // Raw full-spectrum noise jumping straight to peak amplitude is a click
-            // (hail on glass); running it through a damped lowpass with a short fade-in
-            // rounds it into something closer to an actual droplet.
-            var rainDrop = 0.0
-            if p.atmosphere == .rain {
-                if rainDropSamplesRemaining > 0 {
-                    let progress = 1.0 - Double(rainDropSamplesRemaining) / Double(max(rainDropTotalSamples, 1))
-                    let decay = Double(rainDropSamplesRemaining) / Double(max(rainDropTotalSamples, 1))
-                    let attack = min(1.0, progress / 0.15)
-                    // Brighter than the hiss bed's cutoff (~900-3100Hz) so each drop
-                    // still snaps through as a distinct tick rather than blending into
-                    // the bed underneath it.
-                    let dropCutoff = 3200.0
-                    let dropAlpha = dt / (1.0 / (2 * Double.pi * dropCutoff) + dt)
-                    dropFilterState += dropAlpha * (Double.random(in: -1...1) - dropFilterState)
-                    rainDrop = dropFilterState * decay * decay * attack
-                    rainDropSamplesRemaining -= 1
-                } else {
-                    samplesUntilNextDrop -= 1
-                    if samplesUntilNextDrop <= 0 {
-                        // Shorter, more frequent drops than before — a constant,
-                        // overlapping patter reads as rain; the old wider/sparser
-                        // spacing left long silent gaps where only the (louder) hiss
-                        // bed was audible, which is what made it sound like waves.
-                        rainDropTotalSamples = Int(Double.random(in: 0.035...0.08) * sampleRate)
-                        rainDropSamplesRemaining = rainDropTotalSamples
-                        samplesUntilNextDrop = Int(Double.random(in: 0.02...0.12) * sampleRate)
-                    }
-                }
-            }
+            let noiseSignal = noiseFilterState * airWeight + noiseLowState * rumbleWeight
 
             // Bird chirps: short frequency-swept tone bursts at randomized, sparse
             // intervals, so it reads as occasional birdsong rather than a synth loop.
@@ -870,9 +916,75 @@ final class AudioManager: ObservableObject {
                 }
             }
 
+            // Lofi: a slow four-chord loop (sine voices, shared vibrato for warmth),
+            // muffled through a low-pass (the single most "lofi" thing about lofi),
+            // plus quiet vinyl crackle and a soft, steady sub pulse — the one
+            // deliberately rhythmic element, kept minimal on purpose.
+            var lofiSample = 0.0
+            if p.atmosphere == .lofi {
+                lofiChordElapsedSamples += 1
+                if lofiChordElapsedSamples >= lofiChordDurationSamples {
+                    lofiChordElapsedSamples = 0
+                    lofiChordIndex = (lofiChordIndex + 1) % Self.lofiChords.count
+                }
+                let chord = Self.lofiChords[lofiChordIndex]
+
+                lofiVibratoPhase += 0.15 / sampleRate
+                if lofiVibratoPhase > 1 { lofiVibratoPhase -= 1 }
+                let vibrato = 1.0 + 0.002 * sin(2 * Double.pi * lofiVibratoPhase)
+
+                var chordSum = 0.0
+                for voice in 0..<chord.count {
+                    lofiVoicePhases[voice] += (chord[voice] * vibrato) / sampleRate
+                    if lofiVoicePhases[voice] > 1 { lofiVoicePhases[voice] -= 1 }
+                    chordSum += sin(2 * Double.pi * lofiVoicePhases[voice])
+                }
+                chordSum /= Double(chord.count)
+
+                let swell = 0.75 + 0.25 * sin(2 * Double.pi * lofiVibratoPhase * 0.3)
+
+                let lofiCutoff = 500.0 + p.brightness * 900.0
+                let lofiAlpha = dt / (1.0 / (2 * Double.pi * lofiCutoff) + dt)
+                lofiFilterState += lofiAlpha * (chordSum - lofiFilterState)
+
+                var crackle = 0.0
+                if lofiCrackleSamplesRemaining > 0 {
+                    let decay = Double(lofiCrackleSamplesRemaining) / Double(max(lofiCrackleTotalSamples, 1))
+                    lofiCrackleFilterState += 0.5 * (Double.random(in: -1...1) - lofiCrackleFilterState)
+                    crackle = lofiCrackleFilterState * decay
+                    lofiCrackleSamplesRemaining -= 1
+                } else {
+                    samplesUntilNextCrackle -= 1
+                    if samplesUntilNextCrackle <= 0 {
+                        lofiCrackleTotalSamples = Int(Double.random(in: 0.001...0.004) * sampleRate)
+                        lofiCrackleSamplesRemaining = lofiCrackleTotalSamples
+                        samplesUntilNextCrackle = Int(Double.random(in: 0.01...0.18) * sampleRate)
+                    }
+                }
+
+                var pulse = 0.0
+                if lofiPulseSamplesRemaining > 0 {
+                    let progress = 1.0 - Double(lofiPulseSamplesRemaining) / Double(lofiPulseTotalSamples)
+                    lofiPulsePhase += 65.0 / sampleRate
+                    if lofiPulsePhase > 1 { lofiPulsePhase -= 1 }
+                    let envelope = sin(progress * Double.pi)
+                    pulse = sin(2 * Double.pi * lofiPulsePhase) * envelope
+                    lofiPulseSamplesRemaining -= 1
+                } else {
+                    samplesUntilNextPulse -= 1
+                    if samplesUntilNextPulse <= 0 {
+                        lofiPulseSamplesRemaining = lofiPulseTotalSamples
+                        lofiPulsePhase = 0
+                        samplesUntilNextPulse = lofiPulseIntervalSamples
+                    }
+                }
+
+                lofiSample = lofiFilterState * swell * 0.5 + crackle * 0.06 + pulse * 0.18
+            }
+
             var sample = noiseSignal * noiseMix * 1.8
-            sample += rainDrop * 0.42
             sample += birdSample * 0.32
+            sample += lofiSample
             sample *= breath
 
             // Fade toward the play/pause target — slow rise (~2s) so sound turning on

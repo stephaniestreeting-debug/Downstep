@@ -7,33 +7,38 @@ import SwiftUI
 
 struct SynthesisControlsView: View {
     @EnvironmentObject private var audio: AudioManager
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
             Aura.Color.void.ignoresSafeArea()
 
-            VStack(spacing: 28) {
-                VStack(spacing: 6) {
-                    Text("Real-Time Audio\nSynthesis")
-                        .multilineTextAlignment(.center)
-                        .font(Aura.Font.display(24))
-                        .foregroundStyle(Aura.Color.cream)
-                    AuraLabel(text: "Shaped by your moment", size: 11, color: Aura.Color.mist.opacity(0.65))
+            VStack(spacing: 10) {
+                ZStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        AuraLabel(text: "Atmosphere", size: 12, color: Aura.Color.cream, tracking: 1.5)
+                        Text("Change the background sound mid-session.")
+                            .font(Aura.Font.label(11, weight: .regular))
+                            .foregroundStyle(Aura.Color.mist.opacity(0.55))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(Aura.Color.mist.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(.top, 18)
-
-                WaveformView(movement: audio.movementAmount, texture: audio.textureAmount)
-                    .frame(height: 90)
-                    .padding(.horizontal, 8)
+                .padding(.bottom, 14)
 
                 AuraPillSelector(options: AtmosphereStyle.allCases, selection: $audio.atmosphereStyle) { $0.rawValue }
-
-                VStack(spacing: 22) {
-                    AuraSlider(title: "Atmosphere", value: $audio.atmosphereAmount)
-                    AuraSlider(title: "Texture", value: $audio.textureAmount)
-                    AuraSlider(title: "Movement", value: $audio.movementAmount)
-                }
-                .padding(.top, 4)
 
                 Spacer(minLength: 0)
             }

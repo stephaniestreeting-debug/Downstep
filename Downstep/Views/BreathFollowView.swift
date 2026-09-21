@@ -34,7 +34,11 @@ struct BreathFollowView: View {
 
                 Spacer(minLength: 0)
 
-                if audio.isManualModeChosen && !isReady {
+                // Once a session actually ends (summary produced), always fall back
+                // to the plain orb as ambient backdrop — the drag track's own
+                // instructions ("drag up slowly...") are actively wrong to show
+                // once there's nothing left to drag for.
+                if audio.isManualModeChosen && !isReady && audio.breathSummary == nil {
                     // Prefer the de-escalation target over the raw current pace: once
                     // guidance is active, the drag's "too fast" warning should coach
                     // toward where the curve wants them next, not just describe
@@ -81,7 +85,7 @@ struct BreathFollowView: View {
         .sheet(isPresented: $showSynthesis) {
             SynthesisControlsView()
                 .environmentObject(audio)
-                .presentationDetents([.fraction(0.55)])
+                .presentationDetents([.fraction(0.3)])
                 .presentationDragIndicator(.visible)
         }
     }
@@ -99,15 +103,30 @@ struct BreathFollowView: View {
 
     @ViewBuilder
     private var statusText: some View {
+        // The Ready screen always gets the plain idle prompt, never leftover
+        // session text — `breathFollowState` itself doesn't always reset the
+        // instant a session ends (e.g. `finish()` can leave it at `.following`
+        // if no summary was produced), so this checks readiness first rather
+        // than trusting breathFollowState alone.
+        if isReady {
+            AuraLabel(text: "Tap begin when you're ready", size: 12, color: Aura.Color.mist.opacity(0.6), tracking: 1)
+        } else {
+            activeStatusText
+        }
+    }
+
+    @ViewBuilder
+    private var activeStatusText: some View {
         switch audio.breathFollowState {
         case .idle:
-            if isReady {
-                AuraLabel(text: "Tap begin when you're ready", size: 12, color: Aura.Color.mist.opacity(0.6), tracking: 1)
-            }
+            EmptyView()
         case .calibrating:
-            if audio.shouldOfferTapFallback {
+            // In manual mode there's no mic to fall back from — showing "tap
+            // here instead" while already on the touch track is a redundant
+            // leftover of a check meant only for the reactive mic-loss case.
+            if audio.shouldOfferTapFallback && !audio.isManualModeChosen {
                 tapInsteadLink
-            } else {
+            } else if !audio.isManualModeChosen {
                 AuraLabel(text: "Finding your rhythm\u{2026}", size: 12, color: Aura.Color.cream.opacity(0.85), tracking: 1.5)
             }
         case .following:
@@ -191,7 +210,7 @@ struct BreathFollowView: View {
                     .foregroundStyle(Aura.Color.mist.opacity(0.55))
             }
 
-            choiceRow(label: "Input", subtitle: "How it follows your breathing") {
+            choiceRow(label: "Input", subtitle: inputSubtitle) {
                 AuraPillSelector(options: BreathInputMode.allCases, selection: $audio.preferredInputMode) { $0.rawValue }
             }
 
@@ -214,6 +233,20 @@ struct BreathFollowView: View {
             get: { audio.soundEnabled ? .on : .off },
             set: { audio.soundEnabled = $0 == .on }
         )
+    }
+
+    /// Proximity only matters for the mic — the touch track has no equivalent
+    /// concern, so the tip only shows up when it's actually relevant. Deliberately
+    /// doesn't say "hold it close" — the whole point is watching the screen react
+    /// to your breathing, so pressing the phone against your face to be heard
+    /// would defeat the actual feature. Propped up nearby is enough; headphones
+    /// solve distance entirely since the mic is then at your ear regardless of
+    /// where the phone sits.
+    private var inputSubtitle: String {
+        switch audio.preferredInputMode {
+        case .mic: "Works best propped nearby — headphones help it hear you too"
+        case .touch: "How it follows your breathing"
+        }
     }
 
     private func choiceRow<Content: View>(label: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {

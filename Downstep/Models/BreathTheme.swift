@@ -9,9 +9,10 @@ import Foundation
 /// tone/hum in the mix — everything here is a generated nature texture.
 enum AtmosphereStyle: String, CaseIterable, Identifiable, Hashable {
     case rain = "Rain"
-    case wind = "Wind"
-    case ocean = "Ocean"
     case birds = "Birds"
+    /// A generated (not sampled) warm chord loop with vinyl crackle and a soft
+    /// pulse — for listeners who find music more calming than nature sound.
+    case lofi = "Lofi"
 
     var id: String { rawValue }
 }
@@ -34,14 +35,13 @@ enum SoundPreference: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
 }
 
-/// A visual/mood theme for the single breath-following screen — background art,
-/// a default nature-sound character (used only if sound is turned on), and the
-/// paced breathing rate/depth used as a fallback if the mic loses the signal.
+/// A visual/mood theme for the single breath-following screen — background art
+/// and the paced breathing rate/depth used as a fallback if the mic loses the
+/// signal. Atmosphere is its own separate "make it yours" choice now.
 struct BreathTheme: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let backgroundImage: String
-    let defaultAtmosphere: AtmosphereStyle
 
     /// Fallback paced rate/depth (Hz, 0...1) used only while the mic can't hear a
     /// clear breath signal — the mic-driven rate takes over the moment it can.
@@ -57,7 +57,6 @@ struct BreathTheme: Identifiable, Hashable {
     static let breathe = BreathTheme(
         name: "Breathe",
         backgroundImage: "SunsetBackground",
-        defaultAtmosphere: .rain,
         breathRate: 0.10,
         breathDepth: 0.55,
         baseTexture: 0.35,
@@ -69,7 +68,6 @@ struct BreathTheme: Identifiable, Hashable {
     static let focus = BreathTheme(
         name: "Focus",
         backgroundImage: "CosmicBackground",
-        defaultAtmosphere: .wind,
         breathRate: 0.05,
         breathDepth: 0.18,
         baseTexture: 0.4,
@@ -81,7 +79,6 @@ struct BreathTheme: Identifiable, Hashable {
     static let letGo = BreathTheme(
         name: "Let Go",
         backgroundImage: "MistBackground 1",
-        defaultAtmosphere: .ocean,
         breathRate: 0.035,
         breathDepth: 0.75,
         baseTexture: 0.45,

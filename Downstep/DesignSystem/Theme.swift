@@ -16,12 +16,6 @@ enum Aura {
         static let mist = SwiftUI.Color(red: 0.78, green: 0.82, blue: 0.80)
         static let cream = SwiftUI.Color(red: 0.94, green: 0.94, blue: 0.90)
         static let hairline = SwiftUI.Color.white.opacity(0.14)
-
-        static let auraGradient = LinearGradient(
-            colors: [amber, sage, sageDeep],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 
     enum Font {

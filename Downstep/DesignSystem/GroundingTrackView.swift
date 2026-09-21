@@ -25,7 +25,9 @@ struct GroundingTrackView: View {
     @State private var committedOffset: CGFloat = 0
     @State private var smoothedWarmth: Double = 0
     @GestureState private var dragTranslation: CGFloat = 0
-    private let phaseHaptic = UIImpactFeedbackGenerator(style: .light)
+    /// `.soft` is Apple's dull, rounded, lower-amplitude impact style — a low
+    /// thud rather than a sharp tap, matching a breath's own weight.
+    private let phaseHaptic = UIImpactFeedbackGenerator(style: .soft)
 
     private let trackHeight: CGFloat = 220
     private let bubbleSize: CGFloat = 52
