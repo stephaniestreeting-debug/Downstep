@@ -16,6 +16,24 @@ enum AtmosphereStyle: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
 }
 
+/// How a session follows breathing — chosen upfront on the Ready screen, not
+/// assumed or silently switched mid-session.
+enum BreathInputMode: String, CaseIterable, Identifiable, Hashable {
+    case mic = "Listen with mic"
+    case touch = "Track by touch"
+
+    var id: String { rawValue }
+}
+
+/// Whether the generated nature-sound bed plays — a third upfront choice,
+/// alongside input and atmosphere, rather than a toggle buried mid-session.
+enum SoundPreference: String, CaseIterable, Identifiable, Hashable {
+    case on = "Sound on"
+    case off = "Silent"
+
+    var id: String { rawValue }
+}
+
 /// A visual/mood theme for the single breath-following screen — background art,
 /// a default nature-sound character (used only if sound is turned on), and the
 /// paced breathing rate/depth used as a fallback if the mic loses the signal.
@@ -73,4 +91,10 @@ struct BreathTheme: Identifiable, Hashable {
     )
 
     static let all: [BreathTheme] = [.breathe, .focus, .letGo]
+
+    /// Looked up by name for persistence — themes are re-created fresh each
+    /// launch, so a saved UUID would never match; the name is what's stable.
+    static func named(_ name: String?) -> BreathTheme {
+        all.first { $0.name == name } ?? .breathe
+    }
 }

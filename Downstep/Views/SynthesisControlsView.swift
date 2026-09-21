@@ -26,7 +26,7 @@ struct SynthesisControlsView: View {
                     .frame(height: 90)
                     .padding(.horizontal, 8)
 
-                AuraPillSelector(options: AtmosphereStyle.allCases, selection: $audio.atmosphereStyle)
+                AuraPillSelector(options: AtmosphereStyle.allCases, selection: $audio.atmosphereStyle) { $0.rawValue }
 
                 VStack(spacing: 22) {
                     AuraSlider(title: "Atmosphere", value: $audio.atmosphereAmount)

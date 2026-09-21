@@ -5,9 +5,12 @@
 
 import SwiftUI
 
-struct AuraPillSelector: View {
-    let options: [AtmosphereStyle]
-    @Binding var selection: AtmosphereStyle
+/// A row of equal-weight capsule choices — used for every "make it yours"
+/// upfront choice (input, sound, atmosphere) so they all read as peers.
+struct AuraPillSelector<Option: Identifiable & Hashable>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    let label: (Option) -> String
 
     var body: some View {
         HStack(spacing: 10) {
@@ -15,12 +18,12 @@ struct AuraPillSelector: View {
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { selection = option }
                 } label: {
-                    Text(option.rawValue.uppercased())
+                    Text(label(option).uppercased())
                         .font(Aura.Font.label(11, weight: .semibold))
                         .tracking(1.2)
                         .foregroundStyle(selection == option ? Aura.Color.void : Aura.Color.mist)
                         .padding(.vertical, 9)
-                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity)
                         .background(
                             Capsule().fill(selection == option ? Aura.Color.sage : Color.white.opacity(0.06))
                         )

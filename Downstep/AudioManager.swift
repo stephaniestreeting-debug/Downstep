@@ -29,13 +29,47 @@ struct BreathReading: Identifiable {
 }
 
 final class AudioManager: ObservableObject {
+    /// Keys for the four "make it yours" choices — remembered as the default
+    /// for next time, but never assumed; each is only ever changed by an
+    /// explicit tap on the Ready screen (or, for sound/atmosphere, mid-session).
+    private enum PreferenceKeys {
+        static let soundEnabled = "downstep.pref.soundEnabled"
+        static let atmosphere = "downstep.pref.atmosphere"
+        static let inputMode = "downstep.pref.inputMode"
+        static let themeName = "downstep.pref.themeName"
+    }
+
     @Published private(set) var isPlaying = false
     /// Seconds since the current session began — open-ended by design (no fixed
     /// timer/countdown); used only to timestamp breath-rate history.
     @Published private(set) var elapsed: TimeInterval = 0
 
-    @Published var atmosphereStyle: AtmosphereStyle = .rain {
-        didSet { updateParams { $0.atmosphere = atmosphereStyle } }
+    @Published var atmosphereStyle: AtmosphereStyle = {
+        guard let raw = UserDefaults.standard.string(forKey: PreferenceKeys.atmosphere) else { return .rain }
+        return AtmosphereStyle(rawValue: raw) ?? .rain
+    }() {
+        didSet {
+            updateParams { $0.atmosphere = atmosphereStyle }
+            UserDefaults.standard.set(atmosphereStyle.rawValue, forKey: PreferenceKeys.atmosphere)
+        }
+    }
+    /// The visual/mood backdrop, chosen upfront and remembered — sets the mood
+    /// only; it no longer silently overrides the atmosphere choice too (see
+    /// `applyTheme`).
+    @Published var preferredTheme: BreathTheme = .named(UserDefaults.standard.string(forKey: PreferenceKeys.themeName)) {
+        didSet {
+            UserDefaults.standard.set(preferredTheme.name, forKey: PreferenceKeys.themeName)
+        }
+    }
+    /// Mic vs. touch — decided upfront on the Ready screen, remembered, and
+    /// never silently switched once a session starts.
+    @Published var preferredInputMode: BreathInputMode = {
+        guard let raw = UserDefaults.standard.string(forKey: PreferenceKeys.inputMode) else { return .mic }
+        return BreathInputMode(rawValue: raw) ?? .mic
+    }() {
+        didSet {
+            UserDefaults.standard.set(preferredInputMode.rawValue, forKey: PreferenceKeys.inputMode)
+        }
     }
     /// Overall spatial depth — drives the reverb's wet/dry mix.
     @Published var atmosphereAmount: Double = 0.45 {
@@ -208,15 +242,20 @@ final class AudioManager: ObservableObject {
 
     // MARK: - Transport
 
-    /// Whether the generated nature-sound bed plays at all. Off by default — the
-    /// core experience is visual + breath tracking; sound is an optional layer.
-    @Published var soundEnabled = false {
-        didSet { updateParams { $0.fadeTarget = (soundEnabled && isPlaying) ? 1 : 0 } }
+    /// Whether the generated nature-sound bed plays at all — off by default the
+    /// very first time, then remembered like the other "make it yours" choices.
+    @Published var soundEnabled: Bool = UserDefaults.standard.object(forKey: PreferenceKeys.soundEnabled) as? Bool ?? false {
+        didSet {
+            updateParams { $0.fadeTarget = (soundEnabled && isPlaying) ? 1 : 0 }
+            UserDefaults.standard.set(soundEnabled, forKey: PreferenceKeys.soundEnabled)
+        }
     }
 
     func applyTheme(_ theme: BreathTheme) {
         currentSession = theme
-        atmosphereStyle = theme.defaultAtmosphere
+        // Atmosphere is its own upfront choice now (see `preferredTheme`) — the
+        // backdrop only sets the visual mood and the mic-loss fallback pace,
+        // it no longer silently overrides whatever sound the listener picked.
         textureAmount = theme.baseTexture
         movementAmount = 0.4
         updateParams { p in
@@ -641,6 +680,13 @@ final class AudioManager: ObservableObject {
     /// per completed breath — by a tap, or by a full drag-track cycle — after a couple
     /// of signals this feeds the exact same pipeline mic detection does, so tracking,
     /// guidance, and the trend chart all work identically no matter which input it was.
+    /// Called only when the listener explicitly taps the "switch to touch"
+    /// hint after the mic goes quiet — the fallback is offered, never
+    /// silently applied. This is what actually swaps in the drag track.
+    func confirmManualFallback() {
+        isManualModeChosen = true
+    }
+
     func registerRhythmSignal() {
         guard isFollowingBreath else { return }
         let now = Date()

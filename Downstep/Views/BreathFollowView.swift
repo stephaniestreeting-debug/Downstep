@@ -11,7 +11,6 @@ import SwiftUI
 
 struct BreathFollowView: View {
     @EnvironmentObject private var audio: AudioManager
-    @State private var selectedTheme: BreathTheme = .breathe
     @State private var showSynthesis = false
 
     private var isReady: Bool {
@@ -28,14 +27,14 @@ struct BreathFollowView: View {
 
     var body: some View {
         ZStack {
-            AuraBackground(imageName: selectedTheme.backgroundImage)
+            AuraBackground(imageName: audio.preferredTheme.backgroundImage)
 
             VStack(spacing: 0) {
                 header
 
                 Spacer(minLength: 0)
 
-                if (audio.shouldOfferTapFallback || audio.isManualModeChosen) && !isReady {
+                if audio.isManualModeChosen && !isReady {
                     // Prefer the de-escalation target over the raw current pace: once
                     // guidance is active, the drag's "too fast" warning should coach
                     // toward where the curve wants them next, not just describe
@@ -143,23 +142,30 @@ struct BreathFollowView: View {
     }
 
     private var tapInsteadLink: some View {
+        // Offered, never applied on its own — the mic-loss timeout only ever
+        // shows this hint; the drag track appears when (and only when) it's
+        // actually tapped.
         Button {
-            audio.registerRhythmSignal()
+            audio.confirmManualFallback()
         } label: {
-            Text("OR TAP HERE INSTEAD")
+            Text("STRUGGLING TO HEAR YOU — TAP TO SWITCH TO TOUCH")
                 .font(Aura.Font.label(11, weight: .medium))
                 .tracking(1)
                 .foregroundStyle(Aura.Color.mist.opacity(0.6))
+                .multilineTextAlignment(.center)
         }
         .buttonStyle(.plain)
     }
 
     private var readyControls: some View {
-        VStack(spacing: 24) {
-            themePicker
+        VStack(spacing: 22) {
+            makeItYours
 
             Button {
-                audio.beginSession(selectedTheme)
+                switch audio.preferredInputMode {
+                case .mic: audio.beginSession(audio.preferredTheme)
+                case .touch: audio.beginManualSession(audio.preferredTheme)
+                }
             } label: {
                 Text("BEGIN")
                     .font(Aura.Font.label(13, weight: .semibold))
@@ -170,16 +176,55 @@ struct BreathFollowView: View {
                     .background(Capsule().fill(Aura.Color.cream))
             }
             .buttonStyle(.plain)
+        }
+    }
 
-            Button {
-                audio.beginManualSession(selectedTheme)
-            } label: {
-                Text("IN A NOISY PLACE? TRACK BY TOUCH INSTEAD")
-                    .font(Aura.Font.label(10, weight: .medium))
-                    .tracking(1)
+    /// Every choice that shapes a session, decided upfront instead of assumed
+    /// or buried in a settings sheet — each one remembers its last value as
+    /// the default next time, but is always visible and always changeable.
+    private var makeItYours: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                AuraLabel(text: "Make it yours", size: 12, color: Aura.Color.cream, tracking: 1.5)
+                Text("Remembers your choices next time.")
+                    .font(Aura.Font.label(10, weight: .regular))
                     .foregroundStyle(Aura.Color.mist.opacity(0.55))
             }
-            .buttonStyle(.plain)
+
+            choiceRow(label: "Input", subtitle: "How it follows your breathing") {
+                AuraPillSelector(options: BreathInputMode.allCases, selection: $audio.preferredInputMode) { $0.rawValue }
+            }
+
+            choiceRow(label: "Sound", subtitle: "Plays under everything else") {
+                AuraPillSelector(options: SoundPreference.allCases, selection: soundBinding) { $0.rawValue }
+            }
+
+            choiceRow(label: "Atmosphere", subtitle: "The background sound you hear") {
+                AuraPillSelector(options: AtmosphereStyle.allCases, selection: $audio.atmosphereStyle) { $0.rawValue }
+            }
+
+            choiceRow(label: "Backdrop", subtitle: "Sets the mood, not the mechanic") {
+                themePicker
+            }
+        }
+    }
+
+    private var soundBinding: Binding<SoundPreference> {
+        Binding(
+            get: { audio.soundEnabled ? .on : .off },
+            set: { audio.soundEnabled = $0 == .on }
+        )
+    }
+
+    private func choiceRow<Content: View>(label: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 1) {
+                AuraLabel(text: label, size: 9, color: Aura.Color.sage, tracking: 1.2)
+                Text(subtitle)
+                    .font(Aura.Font.label(10, weight: .regular))
+                    .foregroundStyle(Aura.Color.mist.opacity(0.5))
+            }
+            content()
         }
     }
 
@@ -187,23 +232,23 @@ struct BreathFollowView: View {
         HStack(spacing: 14) {
             ForEach(BreathTheme.all) { theme in
                 Button {
-                    selectedTheme = theme
+                    audio.preferredTheme = theme
                 } label: {
                     VStack(spacing: 8) {
                         Image(theme.backgroundImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 56, height: 56)
+                            .frame(width: 48, height: 48)
                             .clipShape(Circle())
                             .overlay(
                                 Circle().strokeBorder(
-                                    selectedTheme.id == theme.id ? Aura.Color.sage : Aura.Color.hairline,
-                                    lineWidth: selectedTheme.id == theme.id ? 2 : 1
+                                    audio.preferredTheme.id == theme.id ? Aura.Color.sage : Aura.Color.hairline,
+                                    lineWidth: audio.preferredTheme.id == theme.id ? 2 : 1
                                 )
                             )
                         Text(theme.name)
                             .font(Aura.Font.label(10, weight: .medium))
-                            .foregroundStyle(selectedTheme.id == theme.id ? Aura.Color.cream : Aura.Color.mist.opacity(0.6))
+                            .foregroundStyle(audio.preferredTheme.id == theme.id ? Aura.Color.cream : Aura.Color.mist.opacity(0.6))
                     }
                 }
                 .buttonStyle(.plain)
