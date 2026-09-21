@@ -6,8 +6,37 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C982CF8BACFEBBDDCE03C151 /* DownstepWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3A516DB37856563209C0A294 /* DownstepWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		97953BE526BEF2CB57C9C066 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D712D00A305C6B77002EB392 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A0F3334C857C56EFBA796EF8;
+			remoteInfo = DownstepWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		87A701E78E0531E5C8171334 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C982CF8BACFEBBDDCE03C151 /* DownstepWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		D712D012305C6B77002EB392 /* Downstep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Downstep.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A516DB37856563209C0A294 /* DownstepWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownstepWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +45,20 @@
 			path = Downstep;
 			sourceTree = "<group>";
 		};
+		9B163C74111753D6E3C859EA /* DownstepWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DownstepWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		D712D00F305C6B77002EB392 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		8237D7D2119F08BC23E6F35A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -31,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				D712D014305C6B77002EB392 /* Downstep */,
+				9B163C74111753D6E3C859EA /* DownstepWidget */,
 				D712D013305C6B77002EB392 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -39,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				D712D012305C6B77002EB392 /* Downstep.app */,
+				3A516DB37856563209C0A294 /* DownstepWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,8 +94,12 @@
 				D712D00E305C6B77002EB392 /* Sources */,
 				D712D00F305C6B77002EB392 /* Frameworks */,
 				D712D010305C6B77002EB392 /* Resources */,
+				87A701E78E0531E5C8171334 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				8EA613397BC3C4F4A56662E5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				D712D014305C6B77002EB392 /* Downstep */,
@@ -63,6 +108,26 @@
 			productName = Downstep;
 			productReference = D712D012305C6B77002EB392 /* Downstep.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A0F3334C857C56EFBA796EF8 /* DownstepWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C7DC91F99C4468B0B9B9A28A /* Build configuration list for PBXNativeTarget "DownstepWidgetExtension" */;
+			buildPhases = (
+				C674EB3DC77DDEE444601AC6 /* Sources */,
+				8237D7D2119F08BC23E6F35A /* Frameworks */,
+				15F04F6968224CB399509E1E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9B163C74111753D6E3C859EA /* DownstepWidget */,
+			);
+			name = DownstepWidgetExtension;
+			productName = DownstepWidgetExtension;
+			productReference = 3A516DB37856563209C0A294 /* DownstepWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -75,6 +140,9 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					D712D011305C6B77002EB392 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					A0F3334C857C56EFBA796EF8 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -94,12 +162,18 @@
 			projectRoot = "";
 			targets = (
 				D712D011305C6B77002EB392 /* Downstep */,
+				A0F3334C857C56EFBA796EF8 /* DownstepWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		D712D010305C6B77002EB392 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		15F04F6968224CB399509E1E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -112,7 +186,20 @@
 			files = (
 			);
 		};
+		C674EB3DC77DDEE444601AC6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8EA613397BC3C4F4A56662E5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A0F3334C857C56EFBA796EF8 /* DownstepWidgetExtension */;
+			targetProxy = 97953BE526BEF2CB57C9C066 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		D712D01B305C6B78002EB392 /* Debug configuration for PBXProject "Downstep" */ = {
@@ -242,13 +329,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your breathing shapes the sound as you go. Nothing is recorded or saved — it's just an amplitude reading, processed on your device only.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Downstep-Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -274,13 +356,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your breathing shapes the sound as you go. Nothing is recorded or saved — it's just an amplitude reading, processed on your device only.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Downstep-Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -293,6 +370,50 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5CBF92983D1C2F953E0786EA /* Debug configuration for PBXNativeTarget "DownstepWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DownstepWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.downstep.Downstep.DownstepWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		32F148A2689BC4C1E41B5223 /* Release configuration for PBXNativeTarget "DownstepWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DownstepWidget-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.downstep.Downstep.DownstepWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -314,6 +435,14 @@
 			buildConfigurations = (
 				D712D01E305C6B78002EB392 /* Debug configuration for PBXNativeTarget "Downstep" */,
 				D712D01F305C6B78002EB392 /* Release configuration for PBXNativeTarget "Downstep" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		C7DC91F99C4468B0B9B9A28A /* Build configuration list for PBXNativeTarget "DownstepWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5CBF92983D1C2F953E0786EA /* Debug configuration for PBXNativeTarget "DownstepWidgetExtension" */,
+				32F148A2689BC4C1E41B5223 /* Release configuration for PBXNativeTarget "DownstepWidgetExtension" */,
 			);
 			defaultConfigurationName = Release;
 		};
