@@ -18,7 +18,7 @@ struct SynthesisControlsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         AuraLabel(text: "Atmosphere", size: 12, color: Aura.Color.cream, tracking: 1.5)
                         Text("Change the background sound mid-session.")
-                            .font(Aura.Font.label(11, weight: .regular))
+                            .auraFont(11, weight: .regular)
                             .foregroundStyle(Aura.Color.mist.opacity(0.55))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

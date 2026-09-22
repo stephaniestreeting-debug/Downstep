@@ -70,7 +70,7 @@ struct BreathSummaryView: View {
             AuraLabel(text: "Session Complete", size: 12, color: Aura.Color.mist.opacity(0.7))
 
             Text(summary)
-                .font(Aura.Font.display(22))
+                .auraDisplayFont(22)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Aura.Color.cream)
                 .fixedSize(horizontal: false, vertical: true)
@@ -79,12 +79,12 @@ struct BreathSummaryView: View {
                 VStack(spacing: 6) {
                     if let timeToCalmLine {
                         Text(timeToCalmLine)
-                            .font(Aura.Font.label(13, weight: .medium))
+                            .auraFont(13, weight: .medium)
                             .foregroundStyle(Aura.Color.sage)
                     }
                     if let stepLine {
                         Text(stepLine)
-                            .font(Aura.Font.label(13, weight: .medium))
+                            .auraFont(13, weight: .medium)
                             .foregroundStyle(Aura.Color.mist.opacity(0.8))
                     }
                 }
@@ -123,7 +123,7 @@ struct BreathSummaryView: View {
             HStack(spacing: 12) {
                 ShareLink(item: shareText) {
                     Text("SHARE")
-                        .font(Aura.Font.label(12, weight: .semibold))
+                        .auraFont(12, weight: .semibold)
                         .tracking(1.5)
                         .foregroundStyle(Aura.Color.cream)
                         .padding(.vertical, 14)
@@ -134,7 +134,7 @@ struct BreathSummaryView: View {
 
                 Button(action: onRestart) {
                     Text("BEGIN AGAIN")
-                        .font(Aura.Font.label(12, weight: .semibold))
+                        .auraFont(12, weight: .semibold)
                         .tracking(1.5)
                         .foregroundStyle(Aura.Color.void)
                         .padding(.vertical, 14)

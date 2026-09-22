@@ -18,18 +18,47 @@ enum Aura {
         static let hairline = SwiftUI.Color.white.opacity(0.14)
     }
 
-    enum Font {
-        static func display(_ size: CGFloat) -> SwiftUI.Font {
-            .system(size: size, weight: .light, design: .serif)
-        }
-        static func label(_ size: CGFloat = 12, weight: SwiftUI.Font.Weight = .medium) -> SwiftUI.Font {
-            .system(size: size, weight: weight, design: .default)
-        }
-    }
-
     enum Tracking {
         static let wide: CGFloat = 3.5
         static let mid: CGFloat = 1.6
+    }
+}
+
+/// A `.font(.system(size:))` call is pinned to that exact point size forever —
+/// someone using iOS's own Larger Text accessibility setting (Settings ›
+/// Accessibility › Display & Text Size) sees no difference at all, unlike
+/// system text styles (`.body`, `.caption`, …) which scale automatically.
+/// `@ScaledMetric` is SwiftUI's way to get that same scaling behavior on a
+/// custom size instead of one of the fixed built-in styles, but it only works
+/// as a property on a `View`/`ViewModifier` (it needs the environment), so it
+/// can't live on a plain static helper — hence this modifier instead of a
+/// function on `Aura.Font`.
+private struct ScaledAuraFont: ViewModifier {
+    @ScaledMetric private var scaledSize: CGFloat
+    private let weight: SwiftUI.Font.Weight
+    private let design: SwiftUI.Font.Design
+
+    init(size: CGFloat, weight: SwiftUI.Font.Weight, design: SwiftUI.Font.Design) {
+        self._scaledSize = ScaledMetric(wrappedValue: size)
+        self.weight = weight
+        self.design = design
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: scaledSize, weight: weight, design: design))
+    }
+}
+
+extension View {
+    /// Aura's small-caption/UI text — scales with the system's text-size setting.
+    func auraFont(_ size: CGFloat, weight: SwiftUI.Font.Weight = .medium) -> some View {
+        modifier(ScaledAuraFont(size: size, weight: weight, design: .default))
+    }
+
+    /// Aura's serif display text (session titles, headline moments) — same
+    /// Dynamic Type scaling as `auraFont`, just the light serif treatment.
+    func auraDisplayFont(_ size: CGFloat) -> some View {
+        modifier(ScaledAuraFont(size: size, weight: .light, design: .serif))
     }
 }
 
@@ -43,7 +72,7 @@ struct AuraLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(Aura.Font.label(size, weight: weight))
+            .auraFont(size, weight: weight)
             .tracking(tracking)
             .foregroundStyle(color)
     }

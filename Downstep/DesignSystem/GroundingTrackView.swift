@@ -40,7 +40,7 @@ struct GroundingTrackView: View {
     var body: some View {
         VStack(spacing: 18) {
             Text(phase == .inhale ? "Drag up slowly to breathe in" : "Pull down gently to breathe out")
-                .font(Aura.Font.label(12, weight: .medium))
+                .auraFont(13, weight: .semibold)
                 .tracking(0.5)
                 .foregroundStyle(Aura.Color.mist.opacity(0.85))
                 .multilineTextAlignment(.center)

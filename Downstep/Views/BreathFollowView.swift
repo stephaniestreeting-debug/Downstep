@@ -29,57 +29,72 @@ struct BreathFollowView: View {
         ZStack {
             AuraBackground(imageName: audio.preferredTheme.backgroundImage)
 
-            VStack(spacing: 0) {
-                header
+            // A GeometryReader + ScrollView with a minHeight floor keeps the old
+            // vertically-centered feel when everything fits, but lets the page
+            // scroll instead of crushing its two Spacers to zero (which used to
+            // jam the status text straight into "Make it yours" the moment that
+            // section grew past what a given screen height had room for).
+            GeometryReader { geo in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        header
 
-                Spacer(minLength: 0)
+                        Spacer(minLength: 20)
 
-                // Once a session actually ends (summary produced), always fall back
-                // to the plain orb as ambient backdrop — the drag track's own
-                // instructions ("drag up slowly...") are actively wrong to show
-                // once there's nothing left to drag for.
-                if audio.isManualModeChosen && !isReady && audio.breathSummary == nil {
-                    // Prefer the de-escalation target over the raw current pace: once
-                    // guidance is active, the drag's "too fast" warning should coach
-                    // toward where the curve wants them next, not just describe
-                    // whatever speed they already happen to be dragging at.
-                    GroundingTrackView(referenceBPM: audio.guidanceTargetBPM ?? audio.currentBPM) {
-                        audio.registerRhythmSignal()
+                        // Once a session actually ends (summary produced), always fall back
+                        // to the plain orb as ambient backdrop — the drag track's own
+                        // instructions ("drag up slowly...") are actively wrong to show
+                        // once there's nothing left to drag for.
+                        if audio.isManualModeChosen && !isReady && audio.breathSummary == nil {
+                            // Prefer the de-escalation target over the raw current pace: once
+                            // guidance is active, the drag's "too fast" warning should coach
+                            // toward where the curve wants them next, not just describe
+                            // whatever speed they already happen to be dragging at.
+                            GroundingTrackView(referenceBPM: audio.guidanceTargetBPM ?? audio.currentBPM) {
+                                audio.registerRhythmSignal()
+                            }
+                            .frame(height: 260)
+                        } else {
+                            // Idle on the Ready screen, the orb is purely decorative — no
+                            // live breath feedback to show yet — so it can afford to be
+                            // smaller there, freeing up room for "Make it yours" to breathe
+                            // without pushing the whole page into more scrolling than it needs.
+                            let orbSize: CGFloat = isReady ? 200 : 260
+                            BreathVisualView(state: audio.breathFollowState, liveLevel: audio.liveBreathLevel, agitation: agitation, targetBPM: audio.guidanceTargetBPM)
+                                .frame(width: orbSize, height: orbSize)
+                        }
+
+                        statusText
+                            .padding(.top, 26)
+                            .frame(minHeight: 40)
+
+                        Spacer(minLength: 28)
+
+                        if let summary = audio.breathSummary {
+                            BreathSummaryView(
+                                summary: summary,
+                                history: audio.bpmHistory,
+                                elapsed: audio.elapsed,
+                                timeToCalmSeconds: audio.timeToCalmSeconds,
+                                timeToCalmIsBest: audio.timeToCalmIsBest,
+                                stepCount: audio.stepCount,
+                                startBPM: audio.startBPM,
+                                lowestGuidedBPM: audio.lowestGuidedBPM
+                            ) {
+                                audio.stop()
+                            }
+                        } else if isReady {
+                            readyControls
+                        } else {
+                            activeControls
+                        }
                     }
-                    .frame(height: 260)
-                } else {
-                    BreathVisualView(state: audio.breathFollowState, liveLevel: audio.liveBreathLevel, agitation: agitation, targetBPM: audio.guidanceTargetBPM)
-                        .frame(width: 260, height: 260)
-                }
-
-                statusText
-                    .padding(.top, 26)
-                    .frame(minHeight: 40)
-
-                Spacer(minLength: 0)
-
-                if let summary = audio.breathSummary {
-                    BreathSummaryView(
-                        summary: summary,
-                        history: audio.bpmHistory,
-                        elapsed: audio.elapsed,
-                        timeToCalmSeconds: audio.timeToCalmSeconds,
-                        timeToCalmIsBest: audio.timeToCalmIsBest,
-                        stepCount: audio.stepCount,
-                        startBPM: audio.startBPM,
-                        lowestGuidedBPM: audio.lowestGuidedBPM
-                    ) {
-                        audio.stop()
-                    }
-                } else if isReady {
-                    readyControls
-                } else {
-                    activeControls
+                    .padding(.horizontal, 28)
+                    .padding(.top, 8)
+                    .padding(.bottom, 40)
+                    .frame(minHeight: geo.size.height)
                 }
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 8)
-            .padding(.bottom, 40)
         }
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showSynthesis) {
@@ -93,10 +108,10 @@ struct BreathFollowView: View {
     private var header: some View {
         VStack(spacing: 6) {
             Text("DOWNSTEP")
-                .font(Aura.Font.display(22))
+                .auraDisplayFont(22)
                 .tracking(4)
                 .foregroundStyle(Aura.Color.cream)
-            AuraLabel(text: "Breathe. It listens.", size: 11, color: Aura.Color.mist.opacity(0.7))
+            AuraLabel(text: "Breathe. It listens.", size: 12, color: Aura.Color.mist.opacity(0.7))
         }
         .padding(.top, 8)
     }
@@ -109,7 +124,7 @@ struct BreathFollowView: View {
         // if no summary was produced), so this checks readiness first rather
         // than trusting breathFollowState alone.
         if isReady {
-            AuraLabel(text: "Tap begin when you're ready", size: 12, color: Aura.Color.mist.opacity(0.6), tracking: 1)
+            AuraLabel(text: "Tap begin when you're ready", size: 13, color: Aura.Color.mist.opacity(0.7), tracking: 1, weight: .semibold)
         } else {
             activeStatusText
         }
@@ -133,28 +148,30 @@ struct BreathFollowView: View {
             VStack(spacing: 8) {
                 if let bpm = audio.currentBPM {
                     Text("\(Int(bpm.rounded())) breaths / min")
-                        .font(Aura.Font.label(13, weight: .semibold))
+                        .auraFont(13, weight: .semibold)
                         .tracking(1)
                         .foregroundStyle(Aura.Color.cream)
                 }
                 if let guidance = audio.guidanceMessage {
                     Text(guidance)
-                        .font(Aura.Font.display(17))
+                        .auraDisplayFont(17)
                         .foregroundStyle(Aura.Color.amber)
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.6), value: guidance)
                 } else if let encouragement = audio.encouragementMessage {
                     Text(encouragement)
-                        .font(Aura.Font.display(17))
+                        .auraDisplayFont(17)
                         .foregroundStyle(Aura.Color.sage)
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.6), value: encouragement)
                 }
             }
         case .lost:
-            if audio.shouldOfferTapFallback {
+            // Same reasoning as `.calibrating` above: no mic to lose in touch mode,
+            // so neither the "switch to touch" offer nor "couldn't hear you" applies.
+            if audio.shouldOfferTapFallback && !audio.isManualModeChosen {
                 tapInsteadLink
-            } else {
+            } else if !audio.isManualModeChosen {
                 AuraLabel(text: "Couldn't hear you \u{2014} guiding instead", size: 12, color: Aura.Color.amber.opacity(0.85), tracking: 1)
             }
         }
@@ -168,9 +185,9 @@ struct BreathFollowView: View {
             audio.confirmManualFallback()
         } label: {
             Text("STRUGGLING TO HEAR YOU — TAP TO SWITCH TO TOUCH")
-                .font(Aura.Font.label(11, weight: .medium))
+                .auraFont(12, weight: .semibold)
                 .tracking(1)
-                .foregroundStyle(Aura.Color.mist.opacity(0.6))
+                .foregroundStyle(Aura.Color.mist.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
         .buttonStyle(.plain)
@@ -187,7 +204,7 @@ struct BreathFollowView: View {
                 }
             } label: {
                 Text("BEGIN")
-                    .font(Aura.Font.label(13, weight: .semibold))
+                    .auraFont(13, weight: .semibold)
                     .tracking(2)
                     .foregroundStyle(Aura.Color.void)
                     .padding(.vertical, 16)
@@ -195,6 +212,10 @@ struct BreathFollowView: View {
                     .background(Capsule().fill(Aura.Color.cream))
             }
             .buttonStyle(.plain)
+
+            Text("From the makers of Life Forecast, EchoSink & Pocket Anchor")
+                .auraFont(11, weight: .medium)
+                .foregroundStyle(Aura.Color.mist.opacity(0.4))
         }
     }
 
@@ -204,10 +225,10 @@ struct BreathFollowView: View {
     private var makeItYours: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
-                AuraLabel(text: "Make it yours", size: 12, color: Aura.Color.cream, tracking: 1.5)
+                AuraLabel(text: "Make it yours", size: 13, color: Aura.Color.cream, tracking: 1.5)
                 Text("Remembers your choices next time.")
-                    .font(Aura.Font.label(10, weight: .regular))
-                    .foregroundStyle(Aura.Color.mist.opacity(0.55))
+                    .auraFont(11, weight: .medium)
+                    .foregroundStyle(Aura.Color.mist.opacity(0.6))
             }
 
             choiceRow(label: "Input", subtitle: inputSubtitle) {
@@ -252,10 +273,10 @@ struct BreathFollowView: View {
     private func choiceRow<Content: View>(label: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 1) {
-                AuraLabel(text: label, size: 9, color: Aura.Color.sage, tracking: 1.2)
+                AuraLabel(text: label, size: 10, color: Aura.Color.sage, tracking: 1.2, weight: .semibold)
                 Text(subtitle)
-                    .font(Aura.Font.label(10, weight: .regular))
-                    .foregroundStyle(Aura.Color.mist.opacity(0.5))
+                    .auraFont(11, weight: .medium)
+                    .foregroundStyle(Aura.Color.mist.opacity(0.6))
             }
             content()
         }
@@ -280,7 +301,7 @@ struct BreathFollowView: View {
                                 )
                             )
                         Text(theme.name)
-                            .font(Aura.Font.label(10, weight: .medium))
+                            .auraFont(11, weight: .semibold)
                             .foregroundStyle(audio.preferredTheme.id == theme.id ? Aura.Color.cream : Aura.Color.mist.opacity(0.6))
                     }
                 }
@@ -313,7 +334,7 @@ struct BreathFollowView: View {
                 audio.finish()
             } label: {
                 Text("I'M DONE")
-                    .font(Aura.Font.label(12, weight: .semibold))
+                    .auraFont(12, weight: .semibold)
                     .tracking(1.5)
                     .foregroundStyle(Aura.Color.cream)
                     .padding(.vertical, 12)

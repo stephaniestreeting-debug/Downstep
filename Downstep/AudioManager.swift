@@ -438,6 +438,20 @@ final class AudioManager: ObservableObject {
         timeToCalmIsBest = false
         stepCount = 0
         lowestGuidedBPM = nil
+        // The Ready screen's idle orb reads currentBPM/liveBreathLevel too (for its
+        // resting agitation and pulse) — left unset here, a session that ended fast
+        // or erratic left the "calm" idle orb visibly warped and distorted until the
+        // next session overwrote them. beginManualSession/beginBreathCapture already
+        // reset this same set at session *start*, which only papered over the gap
+        // between one session ending and the next one beginning.
+        currentBPM = nil
+        startBPM = nil
+        liveBreathLevel = 0
+        bpmHistory.removeAll()
+        fastBreathStreak = 0
+        deescalationCurveBPM = nil
+        guidanceMessage = nil
+        guidanceTargetBPM = nil
     }
 
     private func startTimer() {
@@ -593,7 +607,14 @@ final class AudioManager: ObservableObject {
     }
 
     private func updateBreathWatchdog() {
-        guard isFollowingBreath else { return }
+        // This watches for a stalled *mic* signal and offers the touch fallback in
+        // response — meaningless once touch has already been chosen deliberately.
+        // Without this guard, `breathFollowState` (parked at `.calibrating` for the
+        // whole manual session, since only mic detection ever advances it to
+        // `.following`) tripped the same 18s timeout as a real stalled mic, flipping
+        // to `.lost` and showing "struggling to hear you — tap to switch to touch"
+        // over a session that was already touch-only from the start.
+        guard isFollowingBreath, !isManualModeChosen else { return }
         let now = Date()
         switch breathFollowState {
         case .calibrating:

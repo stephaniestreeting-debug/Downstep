@@ -19,7 +19,7 @@ struct AuraPillSelector<Option: Identifiable & Hashable>: View {
                     withAnimation(.easeInOut(duration: 0.2)) { selection = option }
                 } label: {
                     Text(label(option).uppercased())
-                        .font(Aura.Font.label(11, weight: .semibold))
+                        .auraFont(12, weight: .semibold)
                         .tracking(1.2)
                         .foregroundStyle(selection == option ? Aura.Color.void : Aura.Color.mist)
                         .padding(.vertical, 9)
