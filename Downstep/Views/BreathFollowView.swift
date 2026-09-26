@@ -76,7 +76,6 @@ struct BreathFollowView: View {
                                 history: audio.bpmHistory,
                                 elapsed: audio.elapsed,
                                 timeToCalmSeconds: audio.timeToCalmSeconds,
-                                timeToCalmIsBest: audio.timeToCalmIsBest,
                                 stepCount: audio.stepCount,
                                 startBPM: audio.startBPM,
                                 lowestGuidedBPM: audio.lowestGuidedBPM

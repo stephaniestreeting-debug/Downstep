@@ -115,8 +115,6 @@ final class AudioManager: ObservableObject {
     /// Seconds from when guidance first kicked in to when breathing settled back
     /// down — the most recently completed episode this session, if any.
     @Published private(set) var timeToCalmSeconds: Int?
-    /// True only when `timeToCalmSeconds` genuinely beats the stored personal best.
-    @Published private(set) var timeToCalmIsBest = false
     /// How many times the de-escalation curve has stepped down this session — the
     /// literal "downstep" count, surfaced on the summary screen.
     @Published private(set) var stepCount = 0
@@ -146,7 +144,6 @@ final class AudioManager: ObservableObject {
     private let stepHaptic = UIImpactFeedbackGenerator(style: .heavy)
     /// When the current guidance episode started — the clock for `timeToCalmSeconds`.
     private var guidanceStartedAt: Date?
-    private static let bestTimeToCalmKey = "downstep.bestTimeToCalmSeconds"
     private var manualTapTimestamps: [Date] = []
     /// True once calibration has gone a few seconds with no clear mic signal — the
     /// UI should offer a manual tap-to-calibrate fallback at that point, for quiet
@@ -392,7 +389,6 @@ final class AudioManager: ObservableObject {
         encouragementMessage = nil
         guidanceStartedAt = nil
         timeToCalmSeconds = nil
-        timeToCalmIsBest = false
         stepCount = 0
         lowestGuidedBPM = nil
         resume()
@@ -435,7 +431,6 @@ final class AudioManager: ObservableObject {
         encouragementMessage = nil
         guidanceStartedAt = nil
         timeToCalmSeconds = nil
-        timeToCalmIsBest = false
         stepCount = 0
         lowestGuidedBPM = nil
         // The Ready screen's idle orb reads currentBPM/liveBreathLevel too (for its
@@ -558,7 +553,6 @@ final class AudioManager: ObservableObject {
         encouragementMessage = nil
         guidanceStartedAt = nil
         timeToCalmSeconds = nil
-        timeToCalmIsBest = false
         stepCount = 0
         lowestGuidedBPM = nil
         liveBreathLevel = 0
@@ -801,16 +795,7 @@ final class AudioManager: ObservableObject {
                         self?.encouragementMessage = nil
                     }
                     if let startedAt = guidanceStartedAt {
-                        let seconds = max(1, Int(Date().timeIntervalSince(startedAt).rounded()))
-                        timeToCalmSeconds = seconds
-                        let defaults = UserDefaults.standard
-                        let storedBest = defaults.object(forKey: Self.bestTimeToCalmKey) as? Int
-                        if storedBest == nil || seconds < storedBest! {
-                            timeToCalmIsBest = true
-                            defaults.set(seconds, forKey: Self.bestTimeToCalmKey)
-                        } else {
-                            timeToCalmIsBest = false
-                        }
+                        timeToCalmSeconds = max(1, Int(Date().timeIntervalSince(startedAt).rounded()))
                     }
                     guidanceStartedAt = nil
                 }

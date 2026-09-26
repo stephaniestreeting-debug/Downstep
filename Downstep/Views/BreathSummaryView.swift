@@ -13,7 +13,6 @@ struct BreathSummaryView: View {
     /// Seconds from when guidance first kicked in to when breathing settled back
     /// down, if that happened this session.
     var timeToCalmSeconds: Int?
-    var timeToCalmIsBest: Bool = false
     /// How many times the de-escalation curve stepped down this session.
     var stepCount: Int = 0
     var startBPM: Double?
@@ -21,12 +20,10 @@ struct BreathSummaryView: View {
     var onRestart: () -> Void
 
     /// "You calmed your breathing in 52 seconds" — a plain fact, never phrased as
-    /// praise or evaluation. "— your fastest yet" only appears on a genuine new
-    /// personal best (Strava-style: celebrate PRs, stay silent otherwise).
+    /// praise, evaluation, or a personal-best to chase.
     private var timeToCalmLine: String? {
         guard let seconds = timeToCalmSeconds else { return nil }
-        let base = "You calmed your breathing in \(seconds) second\(seconds == 1 ? "" : "s")."
-        return timeToCalmIsBest ? base + " Your fastest yet." : base
+        return "You calmed your breathing in \(seconds) second\(seconds == 1 ? "" : "s")."
     }
 
     /// "You stepped your breathing down 8 times — 24 to 8 breaths a minute." — the
