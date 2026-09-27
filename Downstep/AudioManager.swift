@@ -214,14 +214,18 @@ final class AudioManager: ObservableObject {
 
     // Lofi: a generated (not sampled) chord loop, entirely built from sine
     // oscillators — four mellow, jazz-adjacent chords, each held long enough
-    // to feel unhurried. Frequencies are equal-temperament, kept in a warm
-    // low-mid register so the loop sits under the breathing rather than
-    // demanding attention.
+    // to feel unhurried. Frequencies are equal-temperament. Originally pitched
+    // an octave lower (98–330Hz) — real device speakers (iPhone, iPad, alike)
+    // roll off steeply below ~300Hz, so that register played back as barely
+    // audible on real hardware despite sounding fine through a Mac's speakers
+    // in the simulator. Shifted up an octave to sit in a range small speakers
+    // actually reproduce, while the low-pass filter below still keeps it warm
+    // and muffled rather than bright.
     private static let lofiChords: [[Double]] = [
-        [174.61, 220.00, 261.63, 329.63], // Fmaj7
-        [130.81, 164.81, 196.00, 246.94], // Cmaj7
-        [110.00, 130.81, 164.81, 196.00], // Am7
-        [98.00, 123.47, 146.83, 185.00],  // Gmaj7
+        [349.22, 440.00, 523.25, 659.26], // Fmaj7
+        [261.63, 329.63, 392.00, 493.88], // Cmaj7
+        [220.00, 261.63, 329.63, 392.00], // Am7
+        [196.00, 246.94, 293.66, 369.99], // Gmaj7
     ]
     private var lofiChordIndex = 0
     private var lofiChordElapsedSamples = 0
@@ -949,7 +953,10 @@ final class AudioManager: ObservableObject {
 
                 let swell = 0.75 + 0.25 * sin(2 * Double.pi * lofiVibratoPhase * 0.3)
 
-                let lofiCutoff = 500.0 + p.brightness * 900.0
+                // Baseline raised alongside the octave shift above — otherwise this
+                // filter alone would muffle away the exact register that just got
+                // moved up to be audible on real speakers in the first place.
+                let lofiCutoff = 900.0 + p.brightness * 900.0
                 let lofiAlpha = dt / (1.0 / (2 * Double.pi * lofiCutoff) + dt)
                 lofiFilterState += lofiAlpha * (chordSum - lofiFilterState)
 
