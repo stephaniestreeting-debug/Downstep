@@ -35,6 +35,7 @@ struct BreathFollowView: View {
             // jam the status text straight into "Make it yours" the moment that
             // section grew past what a given screen height had room for).
             GeometryReader { geo in
+                ScrollViewReader { scrollProxy in
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
                         header
@@ -87,11 +88,38 @@ struct BreathFollowView: View {
                         } else {
                             activeControls
                         }
+
+                        Color.clear.frame(height: 0).id("bottom")
                     }
                     .padding(.horizontal, 28)
                     .padding(.top, 8)
                     .padding(.bottom, 40)
                     .frame(minHeight: geo.size.height)
+                }
+                .overlay(alignment: .bottom) {
+                    // Simple over precise: rather than measuring content against
+                    // viewport height (which turned out not to propagate reliably
+                    // through the ScrollView), just show this whenever the Ready
+                    // screen — the only screen long enough to ever need it — is up.
+                    // Harmless on a tall screen where nothing needs scrolling; the
+                    // scrollTo below is just a no-op there.
+                    if isReady {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                scrollProxy.scrollTo("bottom", anchor: .bottom)
+                            }
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Aura.Color.cream.opacity(0.75))
+                                .padding(10)
+                                .background(Circle().fill(Color.white.opacity(0.1)))
+                                .overlay(Circle().strokeBorder(Aura.Color.hairline, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.bottom, 14)
+                    }
+                }
                 }
             }
         }
